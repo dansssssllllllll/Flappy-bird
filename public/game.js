@@ -1,6 +1,13 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 const birdImg = new Image();
 birdImg.src = "bird.png";
 const pipeImg = new Image();
@@ -8,9 +15,31 @@ pipeImg.src = "pipe.png";
 const flapSound = new Audio("sounds/flap.mp3");
 const hitSound = new Audio("sounds/hit.mp3");
 
-let bird = { x: 50, y: 150, width: 40, height: 40, velocity: 0 };
+let bird = { x: 80, y: 150, width: 40, height: 40, velocity: 0 };
 let pipes = [], score = 0, gameOver = false, started = false;
-let gap = 150;
+let gap = 180;
+
+function flap() {
+  if (!gameOver && started) {
+    bird.velocity = -8;
+    flapSound.play();
+  }
+}
+
+let isTouchDevice = 'ontouchstart' in window;
+
+if (isTouchDevice) {
+  canvas.addEventListener("touchstart", e => {
+    e.preventDefault();
+    flap();
+  }, { passive: false });
+} else {
+  canvas.addEventListener("mousedown", flap);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") flap();
+});
 
 function startGame() {
   bird.y = 150;
@@ -23,17 +52,6 @@ function startGame() {
   animate();
 }
 
-function flap() {
-  if (!gameOver && started) {
-    bird.velocity = -8;
-    flapSound.play();
-  }
-}
-
-canvas.addEventListener("mousedown", flap);
-canvas.addEventListener("touchstart", flap);
-document.addEventListener("keydown", e => { if (e.code === "Space") flap(); });
-
 function animate() {
   if (!started) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -42,8 +60,8 @@ function animate() {
   bird.y += bird.velocity;
   ctx.drawImage(birdImg, bird.x, bird.y, bird.width, bird.height);
 
-  if (pipes.length === 0 || pipes[pipes.length - 1].x < 280) {
-    const topHeight = Math.floor(Math.random() * 250);
+  if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 280) {
+    const topHeight = Math.floor(Math.random() * (canvas.height - gap - 100));
     pipes.push({ x: canvas.width, top: topHeight });
   }
 
@@ -65,7 +83,7 @@ function animate() {
     }
   });
 
-  if (bird.y + bird.height > canvas.height) {
+  if (bird.y + bird.height > canvas.height || bird.y < 0) {
     gameOver = true;
     hitSound.play();
     setTimeout(handleGameOver, 500);
@@ -112,4 +130,4 @@ function loadLeaderboard() {
 }
 
 loadLeaderboard();
-                        
+    
